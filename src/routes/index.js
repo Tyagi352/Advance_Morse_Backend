@@ -3,6 +3,7 @@ const authRoutes = require("./auth.routes");
 const userRoutes = require("./user.routes");
 const morseRoutes = require("./morse.routes");
 const fileRoutes = require("./file.routes");
+const chatRoutes = require("./chat.routes");
 
 const router = Router();
 
@@ -13,5 +14,6 @@ router.use("/", morseRoutes);
 // Namespaced API routes from original app structure
 router.use("/api/users", userRoutes);
 router.use("/api", fileRoutes);
+router.use("/api/chat", chatRoutes);
 
 module.exports = router;

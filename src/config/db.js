@@ -29,6 +29,31 @@ async function initDB() {
         shared_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS encoded_files (
+        id            SERIAL PRIMARY KEY,
+        user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        original_name VARCHAR(255) NOT NULL,
+        file_name     VARCHAR(255) NOT NULL,
+        file_path     TEXT NOT NULL,
+        file_type     VARCHAR(50) DEFAULT 'encoded',
+        is_viewable   BOOLEAN DEFAULT true,
+        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id            SERIAL PRIMARY KEY,
+        sender_id     INTEGER NOT NULL REFERENCES users(id),
+        recipient_id  INTEGER NOT NULL REFERENCES users(id),
+        morse         TEXT NOT NULL,
+        decoded_text  TEXT NOT NULL,
+        created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log("[DB] Tables ready (Neon PostgreSQL)");
   } finally {
     client.release();

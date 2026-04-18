@@ -31,30 +31,43 @@ function handleSocketConnections(io) {
     io.emit("online_users", Object.keys(onlineUsers).map(Number));
     console.log(`[+] ${user.username} connected  (${Object.keys(onlineUsers).length} online)`);
 
-    // Handle private message
-    socket.on("private_message", (data) => {
+    // Handle private message — save to DB then deliver
+    socket.on("private_message", async (data) => {
       const sender = sidToUser[socket.id];
       if (!sender) return;
 
       const toUid = parseInt(data.to, 10);
       const morse = data.morse || "";
+      const decodedText = data.decoded || "";
       const timestamp = data.timestamp || Date.now();
+
+      // Persist message to database
+      try {
+        await pool.query(
+          `INSERT INTO chat_messages (sender_id, recipient_id, morse, decoded_text, created_at)
+           VALUES ($1, $2, $3, $4, to_timestamp($5 / 1000.0))`,
+          [sender.id, toUid, morse, decodedText, timestamp]
+        );
+      } catch (err) {
+        console.error("[DB] Failed to save chat message:", err.message);
+      }
 
       const payload = {
         from: sender.id,
         fromUsername: sender.username,
         morse,
+        decoded: decodedText,
         timestamp,
       };
 
-      // Deliver to recipient
+      // Deliver to recipient if online
       const recipientSid = onlineUsers[toUid];
       if (recipientSid) {
         io.to(recipientSid).emit("private_message", payload);
       }
 
-      // Echo back to sender
-      socket.emit("message_sent", { to: toUid, morse, timestamp });
+      // Acknowledge back to sender
+      socket.emit("message_sent", { to: toUid, morse, decoded: decodedText, timestamp });
     });
 
     // Handle disconnect
